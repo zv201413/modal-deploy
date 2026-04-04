@@ -26,7 +26,7 @@ def start_supervisor():
 
 @app.function(
     image=vevc_image,
-    secrets=[modal.Secret.from_name("custom-secret")],
+    secrets=[modal.Secret.from_name("vps")],
     min_containers=1,
     max_containers=1,
     scaledown_window=1200

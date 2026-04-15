@@ -3,14 +3,14 @@ import subprocess
 import os
 import base64
 
-INSTALL_SCRIPT_VERSION = 2
+INSTALL_SCRIPT_VERSION = 3
 
 app = modal.App("vevc-app")
 vevc_image = (
     modal.Image.debian_slim()
         .apt_install("curl", "unzip", "supervisor", "procps")
         .run_commands(
-            'curl -sSL "https://raw.githubusercontent.com/zv201413/modal-deploy/refs/heads/main/install.sh?v=1" | bash'
+            'curl -sSL "https://raw.githubusercontent.com/zv201413/modal-deploy/refs/heads/main/install.sh?v=3" | bash'
 )
         .pip_install("fastapi[standard]")
 )

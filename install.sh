@@ -50,12 +50,30 @@ EOF
 # --- 保活脚本与 Crontab ---
 cat > /tmp/keepalive.sh <<'EOF'
 #!/bin/bash
-if [ -z "$E" ]; then
+KPAL="${KPAL:-}"
+if [ -z "$KPAL" ]; then
   exit 0
 fi
-sleep $((RANDOM % 240 + 60))
-status=$(timeout 10 curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$E/status" 2>/dev/null || echo "000")
-echo "$(date '+%Y-%m-%d %H:%M:%S') - Status: $status" >> /tmp/keepalive.log
+
+# 解析 KPAL 环境变量: 随机范围+偏移量:URL
+range_part=$(echo "$KPAL" | cut -d: -f1)
+url=$(echo "$KPAL" | cut -d: -f2-)
+range=$(echo "$range_part" | cut -d+ -f1)
+offset=$(echo "$range_part" | cut -s -d+ -f2)
+
+# 默认值处理
+range=${range:-240}
+offset=${offset:-60}
+
+# 确保是数字
+if ! [[ "$range" =~ ^[0-9]+$ ]]; then range=240; fi
+if ! [[ "$offset" =~ ^[0-9]+$ ]]; then offset=60; fi
+
+sleep_time=$((RANDOM % range + offset))
+status=$(timeout 10 curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url" 2>/dev/null || echo "000")
+
+# 记录详细日志以便调试
+echo "$(date '+%Y-%m-%d %H:%M:%S') [KPAL] range:$range offset:$offset sleep:$sleep_time URL:$url Status:$status" >> /tmp/keepalive.log
 tail -n 20 /tmp/keepalive.log > /tmp/keepalive.tmp && mv /tmp/keepalive.tmp /tmp/keepalive.log
 EOF
 chmod +x /tmp/keepalive.sh
@@ -65,8 +83,8 @@ cat > /etc/my-crontab <<EOF
 EOF
 
 # Supercronic 启动配置
-cat > /etc/supervisor/conf.d/sc.conf <<EOF
-[program:sc]
+cat > /etc/supervisor/conf.d/kpal.conf <<EOF
+[program:kpal]
 directory=/etc
 command=/usr/local/bin/sc /etc/my-crontab
 autostart=%(ENV_ENABLE_SC)s
